@@ -92,34 +92,54 @@ export default function OrderStatusPage() {
     fetchOrderDetails();
 
     // 1. REAL-TIME SUPABASE SUBSCRIPTION FOR ORDER UPDATES
+    let channel: any = null;
+    let pollInterval: any = null;
+
     if (!isMockMode && !orderId.startsWith('mock-')) {
-      const channel = supabase
+      channel = supabase
         .channel(`order-tracking-${orderId}`)
         .on(
           'postgres_changes',
           { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` },
           async (payload) => {
-            // Re-fetch everything to ensure complete items data is synchronized correctly
-            const { data: updatedOrder } = await supabase
-              .from('orders')
-              .select('*')
-              .eq('id', orderId)
-              .single();
-
-            if (updatedOrder) {
-              setOrder((prev) => (prev ? { ...prev, ...updatedOrder } : null));
+            if (payload.new) {
+              setOrder((prev) => (prev ? { ...prev, ...payload.new } : null));
             }
           }
         )
         .subscribe();
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
+      // 2. ROBUST POLLING FALLBACK (Every 3 seconds)
+      // This guarantees synchronization even if Supabase replication/real-time is disabled
+      pollInterval = setInterval(async () => {
+        try {
+          const { data: updatedOrder, error } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('id', orderId)
+            .single();
+
+          if (!error && updatedOrder) {
+            setOrder((prev) => {
+              if (!prev) return prev;
+              if (
+                prev.status !== updatedOrder.status ||
+                prev.payment_status !== updatedOrder.payment_status ||
+                prev.total_amount !== updatedOrder.total_amount
+              ) {
+                return { ...prev, ...updatedOrder };
+              }
+              return prev;
+            });
+          }
+        } catch (err) {
+          console.error('Failed to poll order status:', err);
+        }
+      }, 3000);
     } else {
-      // 2. MOCK REALTIME STORAGE POLL
+      // 3. MOCK REALTIME STORAGE POLL
       // Periodic poller that reads updated status from localStorage every 1.5 seconds
-      const pollInterval = setInterval(() => {
+      pollInterval = setInterval(() => {
         const savedMock = localStorage.getItem(`mock_order_${orderId}`);
         if (savedMock) {
           try {
@@ -141,9 +161,12 @@ export default function OrderStatusPage() {
           }
         }
       }, 1500);
-
-      return () => clearInterval(pollInterval);
     }
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+      if (pollInterval) clearInterval(pollInterval);
+    };
   }, [orderId]);
 
   if (loading) {

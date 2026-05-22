@@ -106,6 +106,34 @@ export default function AdminPage() {
   // Track new orders that arrived in this active session for the popups
   const [newIncomingOrders, setNewIncomingOrders] = useState<any[]>([]);
 
+  // State to track if browser audio has been unlocked via user interaction
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
+
+  // Auto-unlock audio on first click or touch anywhere on the page
+  useEffect(() => {
+    const unlockAudio = () => {
+      const audio = new Audio();
+      audio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAAAD';
+      audio.play().then(() => {
+        setAudioUnlocked(true);
+        window.removeEventListener('click', unlockAudio);
+        window.removeEventListener('touchstart', unlockAudio);
+      }).catch(() => {});
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('click', unlockAudio);
+      window.addEventListener('touchstart', unlockAudio);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('click', unlockAudio);
+        window.removeEventListener('touchstart', unlockAudio);
+      }
+    };
+  }, []);
+
   // Sound & State Trigger for newly arrived orders
   const triggerNewOrderNotification = useCallback((order: any) => {
     // 1. Play real-time notification audio chime
@@ -232,11 +260,14 @@ export default function AdminPage() {
     loadDashboardData();
   }, []);
 
-  // 2. Real-time Subscription Setup for Incoming Customer Orders
+  // 2. Real-time Subscription Setup & Robust Polling Fallback for Incoming Customer Orders
   useEffect(() => {
+    let channel: any = null;
+    let pollInterval: any = null;
+
     if (isMockMode) {
       // Mock Periodical Poller to pull user checkout orders from localStorage
-      const interval = setInterval(() => {
+      pollInterval = setInterval(() => {
         const storedMockOrders: any[] = [];
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i);
@@ -267,11 +298,9 @@ export default function AdminPage() {
           return prev;
         });
       }, 2000);
-
-      return () => clearInterval(interval);
     } else {
-      // Listen to newly created orders in real-time
-      const channel = supabase
+      // A. Real-time Subscription via Supabase postgres_changes
+      channel = supabase
         .channel('admin-orders-monitor')
         .on(
           'postgres_changes',
@@ -302,10 +331,74 @@ export default function AdminPage() {
         )
         .subscribe();
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
+      // B. Robust Polling Fallback (Every 4 seconds)
+      // Guarantees admin receives all orders even if Supabase replication/real-time is disabled/fails
+      pollInterval = setInterval(async () => {
+        try {
+          const { data: latestOrders, error } = await supabase
+            .from('orders')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+          if (!error && latestOrders) {
+            setOrders((prev) => {
+              const newOrdersToNotify: any[] = [];
+              const updatedOrdersList = [...prev];
+
+              for (const lo of latestOrders) {
+                const existingIndex = prev.findIndex((p) => p.id === lo.id);
+                if (existingIndex === -1) {
+                  // New order detected!
+                  if (!initialOrderIdsRef.current.has(lo.id)) {
+                    newOrdersToNotify.push(lo);
+                  }
+                  updatedOrdersList.push(lo);
+                } else {
+                  // Sync status/payment changes made from other sessions
+                  if (
+                    prev[existingIndex].status !== lo.status ||
+                    prev[existingIndex].payment_status !== lo.payment_status
+                  ) {
+                    updatedOrdersList[existingIndex] = {
+                      ...updatedOrdersList[existingIndex],
+                      ...lo
+                    };
+                  }
+                }
+              }
+
+              // Enrich and notify new orders asynchronously
+              if (newOrdersToNotify.length > 0) {
+                newOrdersToNotify.forEach(async (no) => {
+                  const { data: items } = await supabase
+                    .from('order_items')
+                    .select('id, quantity, spice_level, notes, price, menus(name)')
+                    .eq('order_id', no.id);
+
+                  const enriched = {
+                    ...no,
+                    items: items || [],
+                  };
+                  triggerNewOrderNotification(enriched);
+                });
+              }
+
+              // Sort by created_at descending
+              return updatedOrdersList.sort(
+                (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+              );
+            });
+          }
+        } catch (err) {
+          console.error('Failed to poll latest orders:', err);
+        }
+      }, 4000);
     }
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+      if (pollInterval) clearInterval(pollInterval);
+    };
   }, [triggerNewOrderNotification]);
 
   const activeOrdersCount = orders.filter((o) => o.status === 'pending').length;
@@ -339,6 +432,28 @@ export default function AdminPage() {
           </div>
 
           <div className="flex items-center gap-4">
+            {!audioUnlocked && (
+              <button
+                onClick={() => {
+                  const audio = new Audio('/notification.mp3');
+                  audio.play().then(() => {
+                    setAudioUnlocked(true);
+                  }).catch(() => {
+                    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+                    const osc = ctx.createOscillator();
+                    osc.connect(ctx.destination);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.1);
+                    setAudioUnlocked(true);
+                  });
+                }}
+                className="bg-amber-500/15 text-amber-500 hover:bg-amber-500/25 border border-amber-500/30 text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full flex items-center gap-1.5 animate-pulse cursor-pointer"
+              >
+                <Bell className="w-4 h-4 shrink-0 animate-bounce" />
+                Aktifkan Suara Notifikasi
+              </button>
+            )}
+
             {isMockMode && (
               <span className="bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full flex items-center gap-1.5">
                 <AlertCircle className="w-4 h-4 shrink-0" />
