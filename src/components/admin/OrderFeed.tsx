@@ -20,11 +20,17 @@ interface AdminOrder extends Order {
 interface OrderFeedProps {
   orders: AdminOrder[];
   setOrders: React.Dispatch<React.SetStateAction<AdminOrder[]>>;
+  selectedOrder: AdminOrder | null;
+  setSelectedOrder: React.Dispatch<React.SetStateAction<AdminOrder | null>>;
 }
 
-export const OrderFeed: React.FC<OrderFeedProps> = ({ orders, setOrders }) => {
+export const OrderFeed: React.FC<OrderFeedProps> = ({
+  orders,
+  setOrders,
+  selectedOrder,
+  setSelectedOrder,
+}) => {
   const [filter, setFilter] = useState<'all' | 'pending' | 'preparing' | 'ready' | 'completed'>('all');
-  const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
 
   // 1. Play premium synthesized chime alarm when a new order is received
   const playChimeAlarm = () => {
@@ -78,9 +84,9 @@ export const OrderFeed: React.FC<OrderFeedProps> = ({ orders, setOrders }) => {
   const handleUpdateStatus = async (orderId: string, newStatus: string) => {
     try {
       if (isMockMode || orderId.startsWith('mock-')) {
-        // Update local session storage in mock mode
+        // Update local localStorage in mock mode
         const mockOrderKey = `mock_order_${orderId}`;
-        const savedMock = sessionStorage.getItem(mockOrderKey);
+        const savedMock = localStorage.getItem(mockOrderKey);
         
         let updatedOrder: AdminOrder | null = null;
         setOrders((prev) =>
@@ -96,7 +102,7 @@ export const OrderFeed: React.FC<OrderFeedProps> = ({ orders, setOrders }) => {
 
         if (savedMock && updatedOrder) {
           const parsed = JSON.parse(savedMock);
-          sessionStorage.setItem(mockOrderKey, JSON.stringify({ ...parsed, status: newStatus }));
+          localStorage.setItem(mockOrderKey, JSON.stringify({ ...parsed, status: newStatus }));
         }
 
         if (selectedOrder && selectedOrder.id === orderId) {
@@ -131,7 +137,7 @@ export const OrderFeed: React.FC<OrderFeedProps> = ({ orders, setOrders }) => {
     try {
       if (isMockMode || orderId.startsWith('mock-')) {
         const mockOrderKey = `mock_order_${orderId}`;
-        const savedMock = sessionStorage.getItem(mockOrderKey);
+        const savedMock = localStorage.getItem(mockOrderKey);
 
         let updatedOrder: AdminOrder | null = null;
         setOrders((prev) =>
@@ -147,7 +153,7 @@ export const OrderFeed: React.FC<OrderFeedProps> = ({ orders, setOrders }) => {
 
         if (savedMock && updatedOrder) {
           const parsed = JSON.parse(savedMock);
-          sessionStorage.setItem(mockOrderKey, JSON.stringify({ ...parsed, payment_status: nextStatus }));
+          localStorage.setItem(mockOrderKey, JSON.stringify({ ...parsed, payment_status: nextStatus }));
         }
 
         if (selectedOrder && selectedOrder.id === orderId) {

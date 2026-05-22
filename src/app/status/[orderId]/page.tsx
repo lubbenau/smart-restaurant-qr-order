@@ -35,8 +35,8 @@ export default function OrderStatusPage() {
       setLoading(true);
 
       if (isMockMode || orderId.startsWith('mock-')) {
-        // Read simulated order from sessionStorage
-        const savedMock = sessionStorage.getItem(`mock_order_${orderId}`);
+        // Read simulated order from localStorage
+        const savedMock = localStorage.getItem(`mock_order_${orderId}`);
         if (savedMock) {
           try {
             setOrder(JSON.parse(savedMock));
@@ -117,27 +117,32 @@ export default function OrderStatusPage() {
         supabase.removeChannel(channel);
       };
     } else {
-      // 2. MOCK TRANSITION STATE MACHINE SIMULATOR
-      // Move status through: pending -> preparing -> ready -> completed
-      let currentMockStatus = 'pending';
-      const intervals = [
-        { status: 'preparing', delay: 8000 },  // transition to preparing after 8s
-        { status: 'ready', delay: 20000 },      // transition to ready after 20s
-        { status: 'completed', delay: 35000 },  // transition to completed after 35s
-      ];
+      // 2. MOCK REALTIME STORAGE POLL
+      // Periodic poller that reads updated status from localStorage every 1.5 seconds
+      const pollInterval = setInterval(() => {
+        const savedMock = localStorage.getItem(`mock_order_${orderId}`);
+        if (savedMock) {
+          try {
+            const parsed = JSON.parse(savedMock);
+            setOrder((prev) => {
+              if (!prev) return parsed;
+              // Only update if status or payment_status or payment_method has changed
+              if (
+                prev.status !== parsed.status ||
+                prev.payment_status !== parsed.payment_status ||
+                prev.total_amount !== parsed.total_amount
+              ) {
+                return parsed;
+              }
+              return prev;
+            });
+          } catch (e) {
+            console.error('Failed to parse mock order during polling:', e);
+          }
+        }
+      }, 1500);
 
-      const timers = intervals.map((stage) => {
-        return setTimeout(() => {
-          setOrder((prev) => {
-            if (!prev) return null;
-            const updated = { ...prev, status: stage.status as any };
-            sessionStorage.setItem(`mock_order_${orderId}`, JSON.stringify(updated));
-            return updated;
-          });
-        }, stage.delay);
-      });
-
-      return () => timers.forEach(clearTimeout);
+      return () => clearInterval(pollInterval);
     }
   }, [orderId]);
 

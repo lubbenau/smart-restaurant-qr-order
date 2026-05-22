@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Sidebar, AdminTab } from '@/components/admin/Sidebar';
 import { DashboardOverview } from '@/components/admin/DashboardOverview';
 import { OrderFeed } from '@/components/admin/OrderFeed';
@@ -98,6 +98,55 @@ export default function AdminPage() {
   const [menus, setMenus] = useState<Menu[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+  
+  // Track the initial set of order IDs loaded on mount to filter out old pending orders
+  const initialOrderIdsRef = useRef<Set<string>>(new Set());
+  
+  // Track new orders that arrived in this active session for the popups
+  const [newIncomingOrders, setNewIncomingOrders] = useState<any[]>([]);
+
+  // Sound & State Trigger for newly arrived orders
+  const triggerNewOrderNotification = useCallback((order: any) => {
+    // 1. Play real-time notification audio chime
+    try {
+      const audio = new Audio('/notification.mp3');
+      audio.play().catch(() => {
+        // Fallback: Dual-tone synthesized alarm if browser blocks autoplay
+        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        
+        // Soft chime E5
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(659.25, ctx.currentTime);
+        gain1.gain.setValueAtTime(0.12, ctx.currentTime);
+        gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.start();
+        osc1.stop(ctx.currentTime + 0.55);
+
+        // Deluxe harmonic G5 chime slightly delayed
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(783.99, ctx.currentTime + 0.12);
+        gain2.gain.setValueAtTime(0.12, ctx.currentTime + 0.12);
+        gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.65);
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.start(ctx.currentTime + 0.12);
+        osc2.stop(ctx.currentTime + 0.7);
+      });
+    } catch (err) {}
+
+    // 2. Add to active session new order queue for popup toasts
+    setNewIncomingOrders((prev) => {
+      if (prev.some((o) => o.id === order.id)) return prev;
+      return [order, ...prev];
+    });
+  }, []);
 
   // 1. Fetch initial states
   useEffect(() => {
@@ -108,10 +157,10 @@ export default function AdminPage() {
         
         // Load custom orders that might be added via the customer tab simulation
         const storedMockOrders: any[] = [];
-        for (let i = 0; i < sessionStorage.length; i++) {
-          const key = sessionStorage.key(i);
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
           if (key && key.startsWith('mock_order_')) {
-            const raw = sessionStorage.getItem(key);
+            const raw = localStorage.getItem(key);
             if (raw) {
               try {
                 storedMockOrders.push(JSON.parse(raw));
@@ -136,6 +185,7 @@ export default function AdminPage() {
         }))];
 
         setOrders(combinedOrders);
+        combinedOrders.forEach((o) => initialOrderIdsRef.current.add(o.id));
         setLoading(false);
       } else {
         try {
@@ -169,6 +219,7 @@ export default function AdminPage() {
               })
             );
             setOrders(enrichedOrders);
+            enrichedOrders.forEach((o) => initialOrderIdsRef.current.add(o.id));
           }
         } catch (err) {
           console.error('Error fetching admin dashboard data:', err);
@@ -184,13 +235,13 @@ export default function AdminPage() {
   // 2. Real-time Subscription Setup for Incoming Customer Orders
   useEffect(() => {
     if (isMockMode) {
-      // Mock Periodical Poller to pull user checkout orders from session storage
+      // Mock Periodical Poller to pull user checkout orders from localStorage
       const interval = setInterval(() => {
         const storedMockOrders: any[] = [];
-        for (let i = 0; i < sessionStorage.length; i++) {
-          const key = sessionStorage.key(i);
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
           if (key && key.startsWith('mock_order_')) {
-            const raw = sessionStorage.getItem(key);
+            const raw = localStorage.getItem(key);
             if (raw) {
               try {
                 storedMockOrders.push(JSON.parse(raw));
@@ -202,29 +253,20 @@ export default function AdminPage() {
         }
 
         setOrders((prev) => {
-          // Add any new session storage orders not already in local state
-          const newOrders = storedMockOrders.filter((s) => !prev.some((p) => p.id === s.id));
+          // Add any new localStorage orders not already in local state and not part of initial loaded list
+          const newOrders = storedMockOrders.filter(
+            (s) => !initialOrderIdsRef.current.has(s.id) && !prev.some((p) => p.id === s.id)
+          );
+          
           if (newOrders.length > 0) {
-            // Alarm chime trigger simulated!
-            try {
-              const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-              const osc = ctx.createOscillator();
-              const gain = ctx.createGain();
-              osc.type = 'sine';
-              osc.frequency.setValueAtTime(880, ctx.currentTime);
-              gain.gain.setValueAtTime(0.1, ctx.currentTime);
-              gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-              osc.connect(gain);
-              gain.connect(ctx.destination);
-              osc.start();
-              osc.stop(ctx.currentTime + 0.35);
-            } catch (err) {}
-
+            newOrders.forEach((o) => {
+              triggerNewOrderNotification(o);
+            });
             return [...newOrders, ...prev];
           }
           return prev;
         });
-      }, 3000);
+      }, 2000);
 
       return () => clearInterval(interval);
     } else {
@@ -235,26 +277,8 @@ export default function AdminPage() {
           'postgres_changes',
           { event: 'INSERT', schema: 'public', table: 'orders' },
           async (payload) => {
-            // New order created -> Fetch detailed items and prepend to orders feed list
             const newOrder = payload.new as Order;
-            
-            // Play alarm chime
-            try {
-              const audio = new Audio('/notification.mp3');
-              audio.play().catch(() => {
-                const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(659.25, ctx.currentTime);
-                gain.gain.setValueAtTime(0.1, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start();
-                osc.stop(ctx.currentTime + 0.45);
-              });
-            } catch (e) {}
+            if (initialOrderIdsRef.current.has(newOrder.id)) return;
 
             // Fetch order items
             const { data: items } = await supabase
@@ -267,7 +291,13 @@ export default function AdminPage() {
               items: items || [],
             };
 
-            setOrders((prev) => [enriched, ...prev]);
+            // Trigger notification popup and chime audio
+            triggerNewOrderNotification(enriched);
+
+            setOrders((prev) => {
+              if (prev.some((o) => o.id === enriched.id)) return prev;
+              return [enriched, ...prev];
+            });
           }
         )
         .subscribe();
@@ -276,12 +306,12 @@ export default function AdminPage() {
         supabase.removeChannel(channel);
       };
     }
-  }, [orders]);
+  }, [triggerNewOrderNotification]);
 
   const activeOrdersCount = orders.filter((o) => o.status === 'pending').length;
 
   return (
-    <div className="min-h-screen bg-[#0B0F19] text-gray-100 flex font-sans">
+    <div className="min-h-screen bg-[#0B0F19] text-gray-100 flex font-sans relative">
       
       {/* 1. Left Vertical Admin Sidebar */}
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -300,10 +330,10 @@ export default function AdminPage() {
               {activeTab === 'reports' && 'Business Intelligence Laporan'}
             </h1>
 
-            {activeOrdersCount > 0 && activeTab !== 'orders' && (
+            {newIncomingOrders.length > 0 && activeTab !== 'orders' && (
               <span className="bg-amber-500 text-gray-950 font-extrabold text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1.5 animate-pulse">
-                <Bell className="w-3.5 h-3.5 fill-gray-950" />
-                {activeOrdersCount} Baru Masuk
+                <Bell className="w-3.5 h-3.5 fill-gray-950 animate-bounce" />
+                {newIncomingOrders.length} Baru Masuk
               </span>
             )}
           </div>
@@ -338,7 +368,14 @@ export default function AdminPage() {
           ) : (
             <>
               {activeTab === 'overview' && <DashboardOverview orders={orders} />}
-              {activeTab === 'orders' && <OrderFeed orders={orders} setOrders={setOrders} />}
+              {activeTab === 'orders' && (
+                <OrderFeed
+                  orders={orders}
+                  setOrders={setOrders}
+                  selectedOrder={selectedOrder}
+                  setSelectedOrder={setSelectedOrder}
+                />
+              )}
               {activeTab === 'menus' && <MenuManagement menus={menus} setMenus={setMenus} />}
               {activeTab === 'qr' && <QRGenerator />}
               {activeTab === 'reports' && <SalesReports orders={orders} />}
@@ -347,6 +384,51 @@ export default function AdminPage() {
         </div>
 
       </main>
+
+      {/* Floating Glassmorphic Toast Notification for New Orders */}
+      {newIncomingOrders.length > 0 && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-sm w-full bg-[#1E293B]/90 backdrop-blur-lg border border-[#10B981]/30 rounded-2xl p-4 shadow-2xl shadow-[#10B981]/10 text-white animate-fade-in-up">
+          <div className="flex items-start gap-3">
+            <div className="bg-[#10B981]/15 text-[#10B981] p-2.5 rounded-xl shrink-0 animate-pulse">
+              <Bell className="w-5 h-5" />
+            </div>
+            
+            <div className="flex-grow space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-[#10B981] font-black uppercase tracking-wider">Pesanan Baru Masuk!</span>
+                <span className="text-[10px] text-gray-400 font-mono font-bold">Meja {newIncomingOrders[0].table_number}</span>
+              </div>
+              <h4 className="font-black text-xs text-white uppercase mt-0.5">
+                Invoice: <span className="font-mono text-emerald-400">{newIncomingOrders[0].id.slice(0, 8)}...</span>
+              </h4>
+              <p className="text-[11px] text-gray-300 leading-normal line-clamp-2">
+                {newIncomingOrders[0].items?.map((item: any) => `${item.quantity}x ${item.menus?.name || item.menu?.name || 'Item'}`).join(', ') || 'Memuat detail menu...'}
+              </p>
+              
+              <div className="flex items-center gap-2 pt-3">
+                <button
+                  onClick={() => {
+                    setSelectedOrder(newIncomingOrders[0]);
+                    setActiveTab('orders');
+                    setNewIncomingOrders((prev) => prev.slice(1));
+                  }}
+                  className="flex-grow bg-[#10B981] hover:bg-[#10B981]/95 text-gray-950 font-black text-[10px] uppercase py-2 px-3 rounded-lg transition-all text-center"
+                >
+                  Lihat Pesanan
+                </button>
+                <button
+                  onClick={() => {
+                    setNewIncomingOrders((prev) => prev.slice(1));
+                  }}
+                  className="bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold text-[10px] uppercase py-2 px-3 rounded-lg transition-all"
+                >
+                  Tutup
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

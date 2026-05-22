@@ -37,8 +37,8 @@ export const CartDrawer: React.FC = () => {
         await new Promise((resolve) => setTimeout(resolve, 1500));
         const mockOrderId = `mock-order-${Math.floor(100000 + Math.random() * 900000)}`;
         
-        // Save mock order details to sessionStorage for the tracking page
-        sessionStorage.setItem(
+        // Save mock order details to localStorage for the tracking page
+        localStorage.setItem(
           `mock_order_${mockOrderId}`,
           JSON.stringify({
             id: mockOrderId,
