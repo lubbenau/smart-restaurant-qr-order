@@ -60,3 +60,24 @@ export const supabase = createClient(
   finalSupabaseUrl,
   rawSupabaseAnonKey || 'placeholder-anon-key'
 );
+
+/**
+ * Formats a numeric price into Indonesian Rupiah (Rp) presentation.
+ * Supports both seed database values (e.g. 25.00 -> Rp 25.000)
+ * and direct user-entered values (e.g. 25000 -> Rp 25.000).
+ */
+export function formatRupiah(price: number | string): string {
+  const num = typeof price === 'string' ? parseFloat(price) : price;
+  if (isNaN(num)) return 'Rp 0';
+  
+  // If price is small (e.g. < 1000 like 25.00), multiply by 1000.
+  const amount = num < 1000 ? num * 1000 : num;
+  
+  const formatted = new Intl.NumberFormat('id-ID', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(amount);
+  
+  return `Rp ${formatted}`;
+}
+

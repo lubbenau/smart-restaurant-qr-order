@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Trash2, Minus, Plus, CreditCard, Banknote, ShoppingBag } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
-import { supabase, isMockMode } from '@/lib/supabase';
+import { supabase, isMockMode, formatRupiah } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
 export const CartDrawer: React.FC = () => {
@@ -199,7 +199,7 @@ export const CartDrawer: React.FC = () => {
                   </div>
 
                   <span className="font-extrabold text-[#046A55] text-sm mt-auto">
-                    ${(Number(item.menu.price) * item.quantity).toFixed(2)}
+                    {formatRupiah(Number(item.menu.price) * item.quantity)}
                   </span>
                 </div>
 
@@ -279,16 +279,16 @@ export const CartDrawer: React.FC = () => {
             <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-2.5">
               <div className="flex items-center justify-between text-xs text-gray-500">
                 <span>Subtotal</span>
-                <span className="font-bold text-gray-800">${cartTotal.toFixed(2)}</span>
+                <span className="font-bold text-gray-800">{formatRupiah(cartTotal)}</span>
               </div>
               <div className="flex items-center justify-between text-xs text-gray-500">
                 <span>Service Fee & Tax</span>
-                <span className="font-bold text-gray-800">$0.00</span>
+                <span className="font-bold text-gray-800">Rp 0</span>
               </div>
               <hr className="border-gray-200" />
               <div className="flex items-center justify-between">
                 <span className="font-bold text-gray-900 text-sm">Total Amount</span>
-                <span className="font-black text-[#046A55] text-lg">${cartTotal.toFixed(2)}</span>
+                <span className="font-black text-[#046A55] text-lg">{formatRupiah(cartTotal)}</span>
               </div>
             </div>
 

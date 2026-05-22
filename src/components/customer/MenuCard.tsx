@@ -1,6 +1,6 @@
 import React from 'react';
 import { Clock, Star, Plus } from 'lucide-react';
-import { Menu } from '@/lib/supabase';
+import { Menu, formatRupiah } from '@/lib/supabase';
 
 interface MenuCardProps {
   item: Menu;
@@ -67,7 +67,7 @@ export const MenuCard: React.FC<MenuCardProps> = ({ item, onSelect }) => {
         {/* Price and Add Button */}
         <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-50">
           <span className="font-extrabold text-[#1E293B] text-sm md:text-base">
-            ${Number(price).toFixed(2)}
+            {formatRupiah(price)}
           </span>
 
           {is_available && (

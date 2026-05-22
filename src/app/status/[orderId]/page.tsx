@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Coffee, Flame, CheckCircle, Clock, Sparkles, CreditCard } from 'lucide-react';
-import { supabase, isMockMode, Order } from '@/lib/supabase';
+import { supabase, isMockMode, Order, formatRupiah } from '@/lib/supabase';
 
 interface OrderWithItems extends Order {
   items?: {
@@ -303,14 +303,14 @@ export default function OrderStatusPage() {
                     )}
                   </div>
                 </div>
-                <span className="font-bold text-gray-800 text-xs">${(Number(item.price) * item.quantity).toFixed(2)}</span>
+                <span className="font-bold text-gray-800 text-xs">{formatRupiah(Number(item.price) * item.quantity)}</span>
               </div>
             ))}
           </div>
 
           <div className="border-t border-gray-100 pt-3 flex items-center justify-between">
             <span className="font-bold text-gray-500 text-xs">Total Pembayaran</span>
-            <span className="font-extrabold text-[#046A55] text-base">${Number(order.total_amount).toFixed(2)}</span>
+            <span className="font-extrabold text-[#046A55] text-base">{formatRupiah(order.total_amount)}</span>
           </div>
         </div>
 
@@ -357,7 +357,7 @@ export default function OrderStatusPage() {
 
           {order.payment_method === 'cash' && order.payment_status === 'unpaid' && (
             <p className="text-[10px] text-gray-400 italic text-center">
-              * Silakan serahkan uang tunai sebesar <span className="font-bold text-gray-700">${Number(order.total_amount).toFixed(2)}</span> ke pelayan saat pesanan diantarkan ke meja Anda.
+              * Silakan serahkan uang tunai sebesar <span className="font-bold text-gray-700">{formatRupiah(order.total_amount)}</span> ke pelayan saat pesanan diantarkan ke meja Anda.
             </p>
           )}
         </div>

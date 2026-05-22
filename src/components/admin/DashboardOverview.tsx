@@ -1,6 +1,6 @@
 import React from 'react';
 import { DollarSign, FileText, Users, TrendingUp } from 'lucide-react';
-import { Order } from '@/lib/supabase';
+import { Order, formatRupiah } from '@/lib/supabase';
 
 interface DashboardOverviewProps {
   orders: Order[];
@@ -50,7 +50,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ orders }) 
   const stats = [
     {
       label: 'Total Revenue',
-      value: `$${totalRevenue.toFixed(2)}`,
+      value: formatRupiah(totalRevenue),
       desc: 'All-time completed sales',
       icon: DollarSign,
       color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20',
@@ -164,10 +164,10 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ orders }) 
           
           <div className="space-y-4">
             {[
-              { name: 'Meat & Mashrooms', count: 48, pct: '100%', val: '$1,776.00' },
-              { name: 'Pear & Orange', count: 32, pct: '66%', val: '$800.00' },
-              { name: 'Egg & Bread', count: 24, pct: '50%', val: '$600.00' },
-              { name: 'Sweet pancake', count: 18, pct: '37%', val: '$234.00' },
+              { name: 'Meat & Mashrooms', count: 48, pct: '100%', val: 'Rp 1.776.000' },
+              { name: 'Pear & Orange', count: 32, pct: '66%', val: 'Rp 800.000' },
+              { name: 'Egg & Bread', count: 24, pct: '50%', val: 'Rp 600.000' },
+              { name: 'Sweet pancake', count: 18, pct: '37%', val: 'Rp 234.000' },
             ].map((item, idx) => (
               <div key={idx} className="space-y-1">
                 <div className="flex items-center justify-between text-xs font-bold text-gray-300">

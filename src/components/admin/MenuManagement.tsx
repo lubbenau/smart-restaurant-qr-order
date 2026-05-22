@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Edit2, Trash2, Power, Eye, EyeOff, X, Image as ImageIcon } from 'lucide-react';
-import { supabase, isMockMode, Menu } from '@/lib/supabase';
+import { supabase, isMockMode, Menu, formatRupiah } from '@/lib/supabase';
 
 interface MenuManagementProps {
   menus: Menu[];
@@ -207,7 +207,7 @@ export const MenuManagement: React.FC<MenuManagementProps> = ({ menus, setMenus 
               <div className="space-y-1">
                 <div className="flex items-start justify-between gap-2">
                   <h4 className="text-white font-extrabold text-sm leading-tight line-clamp-1">{item.name}</h4>
-                  <span className="text-[#10B981] font-bold text-sm shrink-0">${Number(item.price).toFixed(2)}</span>
+                  <span className="text-[#10B981] font-bold text-sm shrink-0">{formatRupiah(item.price)}</span>
                 </div>
                 <p className="text-[10px] text-gray-500 leading-normal line-clamp-2">{item.description || 'No description supplied.'}</p>
               </div>
@@ -288,12 +288,12 @@ export const MenuManagement: React.FC<MenuManagementProps> = ({ menus, setMenus 
               <div className="grid grid-cols-2 gap-4">
                 {/* Price */}
                 <div className="space-y-1">
-                  <label className="text-gray-400 font-bold uppercase tracking-wider block">Price ($) *</label>
+                  <label className="text-gray-400 font-bold uppercase tracking-wider block">Price (Rp) *</label>
                   <input
                     type="number"
                     step="0.01"
                     required
-                    placeholder="25.00"
+                    placeholder="25.000"
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
                     className="w-full bg-[#0B0F19] text-white placeholder-gray-600 rounded-xl border border-[#1E293B] p-3 focus:outline-none focus:ring-1 focus:ring-[#10B981] focus:border-[#10B981] transition-all"

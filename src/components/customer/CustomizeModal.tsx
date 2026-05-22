@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Flame, Minus, Plus } from 'lucide-react';
-import { Menu } from '@/lib/supabase';
+import { Menu, formatRupiah } from '@/lib/supabase';
 
 interface CustomizeModalProps {
   item: Menu | null;
@@ -82,7 +82,7 @@ export const CustomizeModal: React.FC<CustomizeModalProps> = ({
                 {item.category}
               </span>
               <h3 className="font-bold text-gray-900 text-base">{item.name}</h3>
-              <p className="text-sm font-extrabold text-[#046A55] mt-1">${Number(item.price).toFixed(2)}</p>
+              <p className="text-sm font-extrabold text-[#046A55] mt-1">{formatRupiah(item.price)}</p>
             </div>
           </div>
 
@@ -167,7 +167,7 @@ export const CustomizeModal: React.FC<CustomizeModalProps> = ({
         <div className="p-5 border-t border-gray-100 bg-white flex items-center gap-4">
           <div className="flex flex-col">
             <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Subtotal</span>
-            <span className="font-black text-gray-900 text-xl">${subtotal.toFixed(2)}</span>
+            <span className="font-black text-gray-900 text-xl">{formatRupiah(subtotal)}</span>
           </div>
           
           <button

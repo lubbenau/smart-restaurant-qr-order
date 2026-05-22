@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Check, Coffee, XCircle, DollarSign, AlertCircle, Volume2 } from 'lucide-react';
-import { supabase, isMockMode, Order } from '@/lib/supabase';
+import { supabase, isMockMode, Order, formatRupiah } from '@/lib/supabase';
 
 interface OrderItemWithMenu {
   id: string;
@@ -257,7 +257,7 @@ export const OrderFeed: React.FC<OrderFeedProps> = ({ orders, setOrders }) => {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <span className="text-white font-extrabold text-xs">${Number(order.total_amount).toFixed(2)}</span>
+                    <span className="text-white font-extrabold text-xs">{formatRupiah(order.total_amount)}</span>
                     
                     {/* Status Badge */}
                     <span className={`text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full ${
@@ -316,7 +316,7 @@ export const OrderFeed: React.FC<OrderFeedProps> = ({ orders, setOrders }) => {
                       )}
                     </div>
                   </div>
-                  <span className="font-semibold text-gray-300 font-mono text-xs">${(Number(item.price) * item.quantity).toFixed(2)}</span>
+                  <span className="font-semibold text-gray-300 font-mono text-xs">{formatRupiah(Number(item.price) * item.quantity)}</span>
                 </div>
               ))}
             </div>
@@ -328,7 +328,7 @@ export const OrderFeed: React.FC<OrderFeedProps> = ({ orders, setOrders }) => {
               <div className="flex items-center justify-between text-xs">
                 <div>
                   <span className="text-gray-500 font-bold block">TOTAL AMOUNT</span>
-                  <span className="text-white font-black text-base font-mono">${Number(selectedOrder.total_amount).toFixed(2)}</span>
+                  <span className="text-white font-black text-base font-mono">{formatRupiah(selectedOrder.total_amount)}</span>
                 </div>
                 <button
                   onClick={() => handleTogglePayment(selectedOrder.id, selectedOrder.payment_status)}

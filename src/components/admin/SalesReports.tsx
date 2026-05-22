@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { TrendingUp, Award, DollarSign, Calendar, BarChart2, ShoppingCart } from 'lucide-react';
-import { Order } from '@/lib/supabase';
+import { Order, formatRupiah } from '@/lib/supabase';
 
 interface SalesReportsProps {
   orders: Order[];
@@ -25,10 +25,10 @@ export const SalesReports: React.FC<SalesReportsProps> = ({ orders }) => {
 
   // Category sales share
   const categoriesShare = [
-    { label: 'Breakfast', count: Math.round(34 * multiplier), percentage: '45%', val: `$${(activeGross * 0.45).toFixed(2)}`, color: 'bg-emerald-500' },
-    { label: 'Drinks', count: Math.round(28 * multiplier), percentage: '30%', val: `$${(activeGross * 0.30).toFixed(2)}`, color: 'bg-blue-500' },
-    { label: 'Dessert', count: Math.round(15 * multiplier), percentage: '15%', val: `$${(activeGross * 0.15).toFixed(2)}`, color: 'bg-amber-500' },
-    { label: 'Treats', count: Math.round(10 * multiplier), percentage: '10%', val: `$${(activeGross * 0.10).toFixed(2)}`, color: 'bg-indigo-500' },
+    { label: 'Breakfast', count: Math.round(34 * multiplier), percentage: '45%', val: formatRupiah(activeGross * 0.45), color: 'bg-emerald-500' },
+    { label: 'Drinks', count: Math.round(28 * multiplier), percentage: '30%', val: formatRupiah(activeGross * 0.30), color: 'bg-blue-500' },
+    { label: 'Dessert', count: Math.round(15 * multiplier), percentage: '15%', val: formatRupiah(activeGross * 0.15), color: 'bg-amber-500' },
+    { label: 'Treats', count: Math.round(10 * multiplier), percentage: '10%', val: formatRupiah(activeGross * 0.10), color: 'bg-indigo-500' },
   ];
 
   return (
@@ -65,7 +65,7 @@ export const SalesReports: React.FC<SalesReportsProps> = ({ orders }) => {
         <div className="bg-[#111827] border border-[#1E293B] rounded-2xl p-6 flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-gray-400 font-bold text-xs uppercase tracking-wider block">Estimated Gross Sales</span>
-            <h3 className="text-white text-3xl font-black tracking-tight">${activeGross.toFixed(2)}</h3>
+            <h3 className="text-white text-3xl font-black tracking-tight">{formatRupiah(activeGross)}</h3>
             <span className="text-[9px] text-[#10B981] font-semibold flex items-center gap-1">
               <TrendingUp className="w-3.5 h-3.5" />
               +14.2% from last {period === 'harian' ? 'day' : period === 'mingguan' ? 'week' : 'month'}
@@ -92,7 +92,7 @@ export const SalesReports: React.FC<SalesReportsProps> = ({ orders }) => {
         <div className="bg-[#111827] border border-[#1E293B] rounded-2xl p-6 flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-gray-400 font-bold text-xs uppercase tracking-wider block">Average Ticket Size</span>
-            <h3 className="text-white text-3xl font-black tracking-tight">${activeAov.toFixed(2)}</h3>
+            <h3 className="text-white text-3xl font-black tracking-tight">{formatRupiah(activeAov)}</h3>
             <span className="text-[9px] text-gray-500 font-medium">Mean expenditure amount per customer table</span>
           </div>
           <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
@@ -141,10 +141,10 @@ export const SalesReports: React.FC<SalesReportsProps> = ({ orders }) => {
 
           <div className="divide-y divide-[#1E293B] space-y-3.5 divide-dashed">
             {[
-              { id: '#1', name: 'Meat & Mashrooms', category: 'Breakfast', price: '$37.00', rank: 'bg-amber-400 text-gray-950' },
-              { id: '#2', name: 'Pear & Orange', category: 'Breakfast', price: '$25.00', rank: 'bg-gray-300 text-gray-900' },
-              { id: '#3', name: 'Egg & Bread', category: 'Breakfast', price: '$25.00', rank: 'bg-amber-700 text-white' },
-              { id: '#4', name: 'Sweet pancake', category: 'Dessert', price: '$13.00', rank: 'bg-gray-800 text-gray-400' },
+              { id: '#1', name: 'Meat & Mashrooms', category: 'Breakfast', price: 'Rp 37.000', rank: 'bg-amber-400 text-gray-950' },
+              { id: '#2', name: 'Pear & Orange', category: 'Breakfast', price: 'Rp 25.000', rank: 'bg-gray-300 text-gray-900' },
+              { id: '#3', name: 'Egg & Bread', category: 'Breakfast', price: 'Rp 25.000', rank: 'bg-amber-700 text-white' },
+              { id: '#4', name: 'Sweet pancake', category: 'Dessert', price: 'Rp 13.000', rank: 'bg-gray-800 text-gray-400' },
             ].map((item, index) => (
               <div key={index} className="flex items-center justify-between pt-3.5 first:pt-0 text-xs">
                 <div className="flex items-center gap-3">
