@@ -36,21 +36,27 @@ export interface OrderItem {
   menus?: Menu; // Nested relation from join query
 }
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const rawSupabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
+const rawSupabaseAnonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim();
 
-// A mock flag to help components know if we're running with local mock fallbacks
-export const isMockMode = !supabaseUrl || !supabaseAnonKey;
+// Check if the URL starts with http:// or https:// to be a valid supabase URL
+const isValidSupabaseUrl = rawSupabaseUrl.startsWith('http://') || rawSupabaseUrl.startsWith('https://');
+
+export const isMockMode = !isValidSupabaseUrl || !rawSupabaseAnonKey;
 
 if (isMockMode) {
   console.warn(
-    'Supabase environment variables are missing! The application is running in MOCK mode with fully functional offline state simulation.'
+    'Supabase environment variables are missing or invalid! The application is running in MOCK mode with fully functional offline state simulation.'
   );
 }
 
+const finalSupabaseUrl = isValidSupabaseUrl 
+  ? rawSupabaseUrl 
+  : 'https://placeholder-project-id.supabase.co';
+
 // Initialize Supabase Client
-// We use a dummy URL/key if not provided to allow building without environment variables
+// We use a dummy URL/key if not provided or invalid to allow building without environment variables
 export const supabase = createClient(
-  supabaseUrl || 'https://placeholder-project-id.supabase.co',
-  supabaseAnonKey || 'placeholder-anon-key'
+  finalSupabaseUrl,
+  rawSupabaseAnonKey || 'placeholder-anon-key'
 );
