@@ -124,6 +124,15 @@ export const QRGenerator: React.FC = () => {
               onChange={(e) => setBaseUrl(e.target.value)}
               className="w-full bg-[#0B0F19] text-white placeholder-gray-600 rounded-xl border border-[#1E293B] p-3 focus:outline-none focus:ring-1 focus:ring-[#10B981] transition-all"
             />
+            {baseUrl.includes('localhost') ? (
+              <p className="text-[10px] text-amber-400 font-medium mt-1 leading-tight">
+                ⚠️ Menggunakan localhost. HP Anda tidak akan bisa mengakses ini. Silakan ganti dengan URL Vercel Anda di atas agar bisa di-scan dari HP.
+              </p>
+            ) : (
+              <p className="text-[10px] text-gray-500 font-medium mt-1 leading-tight">
+                💡 Tips: Pastikan ini adalah URL Produksi Vercel utama Anda (tanpa kode hash unik di tengahnya) agar QR Code selalu aktif selamanya saat dideploy ulang.
+              </p>
+            )}
           </div>
 
           {/* Tables config list */}
