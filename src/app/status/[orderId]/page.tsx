@@ -215,6 +215,15 @@ export default function OrderStatusPage() {
   return (
     <div className="min-h-screen bg-[#D7EFEA] flex flex-col font-sans max-w-md mx-auto relative shadow-2xl border-x border-gray-100 pb-10">
       
+      {isMockMode && (
+        <div className="bg-amber-500 text-gray-950 px-5 py-2.5 text-xs font-black text-center border-b border-amber-600 animate-pulse flex flex-col gap-0.5 z-50">
+          <span>⚠️ OFFLINE SIMULATOR MODE AKTIF</span>
+          <span className="font-semibold text-[10px] opacity-90 leading-tight">
+            Status pelacakan ini hanya berjalan lokal di perangkat Anda. Hubungkan Supabase Environment Variables di Vercel untuk sinkronisasi antar-perangkat.
+          </span>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="px-6 pt-8 pb-4 flex items-center gap-3">
         <button

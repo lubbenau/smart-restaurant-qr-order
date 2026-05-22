@@ -218,6 +218,15 @@ export const CustomerMenuContent: React.FC = () => {
   return (
     <div className="min-h-screen bg-white flex flex-col font-sans max-w-md mx-auto relative overflow-x-hidden shadow-2xl border-x border-gray-100 pb-32">
       
+      {isMockMode && (
+        <div className="bg-amber-550 bg-amber-500 text-gray-950 px-5 py-2.5 text-xs font-black text-center border-b border-amber-600 animate-pulse flex flex-col gap-0.5 z-50">
+          <span>⚠️ OFFLINE SIMULATOR MODE AKTIF</span>
+          <span className="font-semibold text-[10px] opacity-90 leading-tight">
+            Pesanan disimpan lokal di HP Anda. Agar Laptop Admin menerima suara notifikasi & pesanan, Anda harus menambahkan Supabase Environment Variables di Vercel.
+          </span>
+        </div>
+      )}
+      
       {/* 1. White Top Header (as shown in reference image) */}
       <div className="bg-white px-6 pt-8 pb-4 space-y-4">
         <div className="flex items-center justify-between">
